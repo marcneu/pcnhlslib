@@ -70,8 +70,8 @@ template<typename T,
 		 int PAR,
 		 int II>
 static void fetchFeatures(array<T,F> input_buffer[PAR][N][K],
-				          hls::stream<array<ap_uint<ceillog2(N)>, K>> identifier_stream[PAR],
-				          hls::stream<array<array<T, F>,K>> output_stream[PAR]) {
+						  hls::stream<array<ap_uint<ceillog2(N)>, K>> identifier_stream[PAR],
+						  hls::stream<array<array<T, F>,K>> output_stream[PAR]) {
 	for(int ii = 0; ii < II; ii++) {
 		#pragma HLS pipeline II=1 rewind
 		for(int p = 0; p < PAR; p++) {
@@ -129,6 +129,7 @@ void calculate_distances(array<input_t,F_C> query[N],
 			for(int nk = 0; nk < N/K;nk++) {
 
 				array<distance_t,K> distances = init_array<distance_t,K>(-ap_fixed_max<distance_t::width,distance_t::iwidth>());
+				// here distances is an array filled with the minimum value of distance_t
 
 				for(int k = 0; k < K; k++) {
 					int n = nk*K+k;
@@ -150,7 +151,7 @@ template<typename input_t,
 		 int II,
 		 int LUT_SIZE>
 void exponential(hls::stream<array<input_t,K>>    &distanceIn,
-		         hls::stream<array<output_t,K-1>> &distanceExp,
+				 hls::stream<array<output_t,K-1>> &distanceExp,
 				 array<output_t, static_pow2(LUT_SIZE)> &expLUT) {
 	array<input_t,K> tempIn;
 	#pragma HLS array_partition variable=tempIn type=complete dim=1
@@ -161,18 +162,45 @@ void exponential(hls::stream<array<input_t,K>>    &distanceIn,
 	#pragma HLS array_partition variable=expLUT type=complete dim=1
 
 	for(int ii = 0; ii < II;ii++) {
-			#pragma HLS pipeline II=1 rewind
-			distanceIn >> tempIn;
-			for(int i = 0; i < K-1; i++) {
-				input_t inverted = -tempIn[i+1];
-				ap_uint<LUT_SIZE> index;
-				if (inverted >= static_cast<input_t>(0.5))
-					index = static_pow2(LUT_SIZE) - 1;
-				else if(inverted <= static_cast<input_t>(0))
-					index = 0;
-				else
-					index = inverted.range(input_t::width - input_t::iwidth,input_t::width - input_t::iwidth - LUT_SIZE);
-				tempOut[i] = expLUT[index];
+		#pragma HLS pipeline II=1 rewind
+		distanceIn >> tempIn;
+		for(int i = 0; i < K-1; i++) {
+			// printf("before exp: %s\n", tempIn[i+1].to_string(10).c_str());
+
+			// LUT-based exponential calculation:
+			input_t inverted = -tempIn[i+1];
+			ap_uint<LUT_SIZE> index;
+			if (inverted >= static_cast<input_t>(0.5))
+				index = static_pow2(LUT_SIZE) - 1;
+			else if(inverted <= static_cast<input_t>(0))
+				index = 0;
+			else
+				index = inverted.range(input_t::width - input_t::iwidth,input_t::width - input_t::iwidth - LUT_SIZE);
+			tempOut[i] = expLUT[index];
+
+			// Direct exponential calculation:
+			// tempOut[i] = static_cast<output_t>(hls::exp(10*static_cast<float>(tempIn[i+1])));
+			
+			input_t alpha = static_cast<input_t>(1.0);
+			input_t beta = static_cast<input_t>(0.7035624);
+			input_t epsilon = static_cast<input_t>(0.01);
+			
+			// Quadratic Weighting (non-quantized):
+			// if (-tempIn[i+1] < beta) {
+			// 	tempOut[i] = static_cast<output_t>(alpha * (tempIn[i+1] + beta) * (tempIn[i+1] + beta) + epsilon);
+			// } else {
+			// 	tempOut[i] = static_cast<output_t>(epsilon);
+			// }
+
+			// Inverse Linear Weighting (non-quantized):
+			// if (-tempIn[i+1] < static_cast<input_t>(1.0) / alpha) {
+			// 	tempOut[i] = static_cast<output_t>(static_cast<input_t>(1.0) + alpha * tempIn[i+1]);	
+			// } else {
+			// 	tempOut[i] = static_cast<output_t>(epsilon);
+			// }
+
+
+			// printf("after exp: %s\n", tempOut[i].to_string(10).c_str());
 		}
 
 		distanceExp << tempOut;
@@ -184,7 +212,7 @@ template<typename input_t,
 		 int K,
 		 int II>
 void exponential(hls::stream<array<input_t,K>>    &distanceIn,
-		         hls::stream<array<output_t,K-1>> &distanceExp) {
+				 hls::stream<array<output_t,K-1>> &distanceExp) {
 	array<input_t,K> tempIn;
 	#pragma HLS array_partition variable=tempIn type=complete dim=1
 
@@ -244,16 +272,17 @@ void aggregate(hls::stream<array<data_t,(K-1)*F_P>> &inputStream,
 			   hls::stream<array<data_t,F_P>> &maxStream,
 			   hls::stream<array<data_t,F_P>> &avgStream){
 
-	const accum_t inverse = static_cast<accum_t>(1.0 / static_cast<float>(K-1));
+	const data_t inverse = static_cast<data_t>(static_cast<float>(1.0) / static_cast<float>(K-1));
 
 	array<data_t,(K-1)*F_P> input;
 	#pragma HLS array_partition variable=input type=complete dim=1
 
-	array<data_t,F_P> maxArray;
-	#pragma HLS array_partition variable=maxArray type=complete dim=1
-
+	
 	for(int ii = 0; ii < II;ii++) {
 		#pragma HLS pipeline II=1 rewind
+
+		array<data_t,F_P> maxArray;
+		#pragma HLS array_partition variable=maxArray type=complete dim=1
 
 		array<data_t,F_P> avgArray;
 		#pragma HLS array_partition variable=avgArray type=complete dim=1
@@ -325,7 +354,7 @@ void combine(hls::stream<array<input_t,F_IN>> 	    &inputFeatureStream,
 }
 
 template<typename T,
-	     int WIDTH,
+		 int WIDTH,
 		 int II>
 void merge(hls::stream<array<T,WIDTH>> &aInputStream,
 		   hls::stream<array<T,WIDTH>> &bInputStream,
@@ -357,8 +386,8 @@ void merge(hls::stream<array<T,WIDTH>> &aInputStream,
 }
 
 template<typename input_t,
-         typename coordinate_t,
-         typename feature_t,
+		 typename coordinate_t,
+		 typename feature_t,
 		 typename distance_t,
 		 typename exponential_t,
 		 typename accum_t,
@@ -372,9 +401,9 @@ template<typename input_t,
 		 int II,
 		 int LUT_SIZE>
 void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
-                 hls::stream<array<feature_t,F_P>>       featureStream[PAR],
+				 hls::stream<array<feature_t,F_P>>       featureStream[PAR],
 				 hls::stream<array<input_t,F_IN>>        inputStream[PAR],
-                 hls::stream<array<output_t,F_IN+2*F_P>> outputStream[PAR],
+				 hls::stream<array<output_t,F_IN+2*F_P>> outputStream[PAR],
 				 array<exponential_t, static_pow2(LUT_SIZE)>  expLUT,
 				 hls::stream<int>                        &numStream) {
 	#pragma HLS inline
@@ -384,9 +413,9 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 	build_point_rows<coordinate_t,F_C,N,PAR,II>(coordinateStream,query,points);
 
 	array<feature_t,F_P> featureBuffer[PAR][N][K];
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=1
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=cyclic factor=PAR dim=2
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=3
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=1
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=cyclic factor=PAR dim=2
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=3
 	#pragma HLS stream variable=featureBuffer type=pipo depth=6
 
 	store_features<feature_t,F_P,N,K,PAR,II>(featureStream,featureBuffer);
@@ -398,9 +427,9 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 	hls::stream<array<ap_uint<ceillog2(N)>, K>> sortedPayload[PAR];
 	hls::stream<array<distance_t,K>> sortedDistances[PAR];
 
-    //FIXME: Yields error when using for loop.
-  	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[0], unsortedPayload[0],sortedDistances[0],sortedPayload[0]);
-  	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
+	//FIXME: Yields error when using for loop.
+	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[0], unsortedPayload[0],sortedDistances[0],sortedPayload[0]);
+	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
 
 	//TODO: Depends on the time for calculating exponential functions
 	hls::stream<array<array<feature_t,F_P>,K>,16> sortedFeatures[PAR];
@@ -420,8 +449,8 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 		drop_and_multiply<feature_t,exponential_t,output_t,K,F_P,II>(sortedFeatures[p], weightedDistances[p], messages[p]);
 	}
 
-	 hls::stream<array<output_t,F_P>> avgStream[PAR];
-	 hls::stream<array<output_t,F_P>> maxStream[PAR];
+	hls::stream<array<output_t,F_P>> avgStream[PAR];
+	hls::stream<array<output_t,F_P>> maxStream[PAR];
 
 	for(int p = 0; p < PAR; p++) {    
 		#pragma HLS unroll
@@ -437,8 +466,8 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 
 
 template<typename input_t,
-         typename coordinate_t,
-         typename feature_t,
+		 typename coordinate_t,
+		 typename feature_t,
 		 typename distance_t,
 		 typename exponential_t,
 		 typename accum_t,
@@ -451,9 +480,9 @@ template<typename input_t,
 		 int PAR,
 		 int II>
 void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
-                 hls::stream<array<feature_t,F_P>>       featureStream[PAR],
+				 hls::stream<array<feature_t,F_P>>       featureStream[PAR],
 				 hls::stream<array<input_t,F_IN>>        inputStream[PAR],
-                 hls::stream<array<output_t,F_IN+2*F_P>> outputStream[PAR],
+				 hls::stream<array<output_t,F_IN+2*F_P>> outputStream[PAR],
 				 hls::stream<int>                        &numStream) {
 	#pragma HLS inline
 
@@ -462,9 +491,9 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 	build_point_rows<coordinate_t,F_C,N,PAR,II>(coordinateStream,query,points);
 
 	array<feature_t,F_P> featureBuffer[PAR][N][K];
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=1
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=cyclic factor=PAR dim=2
-    #pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=3
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=1
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=cyclic factor=PAR dim=2
+	#pragma HLS ARRAY_PARTITION variable=featureBuffer type=complete dim=3
 	#pragma HLS stream variable=featureBuffer type=pipo depth=8
 
 	store_features<feature_t,F_P,N,K,PAR,II>(featureStream,featureBuffer);
@@ -476,9 +505,9 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>>    coordinateStream[PAR],
 	hls::stream<array<ap_uint<ceillog2(N)>, K>> sortedPayload[PAR];
 	hls::stream<array<distance_t,K>> sortedDistances[PAR];
 
-    //FIXME: Yields error when using for loop.
-  	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[0], unsortedPayload[0],sortedDistances[0],sortedPayload[0]);
-  	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
+	//FIXME: Yields error when using for loop.
+	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[0], unsortedPayload[0],sortedDistances[0],sortedPayload[0]);
+	top_k_bitonic_sort<distance_t,ap_uint<ceillog2(N)>,N,K,II>(unsortedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
 
 	//TODO: Depends on the time for calculating exponential functions
 	hls::stream<array<array<feature_t,F_P>,K>,48> sortedFeatures[PAR];

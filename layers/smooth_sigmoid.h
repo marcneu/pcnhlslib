@@ -1,3 +1,4 @@
+
 /* Author: Valdrin Dajaku - Simplified version of smooth sigmoid*/
 #ifndef SMOOTH_SIGMOID_H__
 #define SMOOTH_SIGMOID_H__
@@ -28,8 +29,8 @@ void smooth_sigmoid(hls::stream<array<input_t,F>> &inputStream,
 
     const output_t coeff  = static_cast<output_t>(0.1875);
     const output_t offset = static_cast<output_t>(0.5);
-    const output_t max    = static_cast<output_t>(1.);
-    const output_t min    = static_cast<output_t>(0.);
+    const output_t max    = static_cast<output_t>(1.0);
+    const output_t min    = static_cast<output_t>(0.0);
 
     // Reading Inputs out of Input Stream
     for (int ii = 0; ii < II; ii++) {
@@ -38,7 +39,10 @@ void smooth_sigmoid(hls::stream<array<input_t,F>> &inputStream,
         inputStream >> input; 
         array<output_t,F> output;  
         for (int i = 0; i < F; i++) {
-             #pragma HLS UNROLL
+            #pragma HLS UNROLL
+            // Test without sigmoid
+            //  output[i] = input[i];
+            // break;
             output_t result = (input[i] * coeff + offset);
             if (result >= max) {
                 result = max;

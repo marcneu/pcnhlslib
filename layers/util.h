@@ -436,9 +436,16 @@ void filter(hls::stream<array<T,F>> inputStream[PAR],
                 array<T,F> data;
                 inputStream[p] >> data;
                 if(ii*PAR + p  <  num){
-                    if (condensationPoints.test(ii*PAR + p)){
+                    if (!condensationPoints.test(ii*PAR + p)){
                         data[BETA_OFFSET] = -data[BETA_OFFSET];
                     }
+                    // if (condensationPoints.test(ii*PAR + p)){
+                    //     // If condensation point, make beta positive
+                    //     data[BETA_OFFSET] = hls::fabs(data[BETA_OFFSET]);
+                    // } else {
+                    //     // If not condensation point, make beta negative
+                    //     data[BETA_OFFSET] = -hls::fabs(data[BETA_OFFSET]);
+                    // }
                     outputStream[p] << data;
                 }
 
