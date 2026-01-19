@@ -281,23 +281,19 @@ void exponential(hls::stream<array<input_t,K>>    &distanceIn,
 	#pragma HLS array_partition variable=expLUT type=complete dim=1
 
 	for(int ii = 0; ii < II;ii++) {
-			#pragma HLS pipeline II=1  style=flp
-			distanceIn >> tempIn;
-			for(int i = 0; i < K-1; i++) {
-				input_t inverted = -tempIn[i+1];
-				ap_uint<LUT_SIZE> index;
-				if (inverted >= static_cast<input_t>(0.5))
-					index = static_pow2(LUT_SIZE) - 1;
-				else if(inverted <= static_cast<input_t>(0))
-					index = 0;
-				else
-					index = inverted.range(input_t::width - input_t::iwidth,input_t::width - input_t::iwidth - LUT_SIZE);
-				tempOut[i] = expLUT[index];
-				
-				// Non-LUT version for debugging
-				// tempOut[i] = static_cast<output_t>(hls::exp(10*static_cast<float>(tempIn[i+1])));
+		#pragma HLS pipeline II=1  style=flp
+		distanceIn >> tempIn;
+		for(int i = 0; i < K-1; i++) {
+			input_t inverted = -tempIn[i+1];
+			ap_uint<LUT_SIZE> index;
+			if (inverted >= static_cast<input_t>(0.5))
+				index = static_pow2(LUT_SIZE) - 1;
+			else if(inverted <= static_cast<input_t>(0))
+				index = 0;
+			else
+				index = inverted.range(input_t::width - input_t::iwidth,input_t::width - input_t::iwidth - LUT_SIZE);
+			tempOut[i] = expLUT[index];
 		}
-
 		distanceExp << tempOut;
 	}
 }
@@ -318,7 +314,7 @@ void exponential(hls::stream<array<input_t,K>>    &distanceIn,
 			#pragma HLS pipeline II=1  style=flp
 			distanceIn >> tempIn;
 			for(int i = 0; i < K-1; i++) {
-				tempOut[i] = static_cast<output_t>(hls::exp(static_cast<float>(-tempIn[i+1])));
+				tempOut[i] = static_cast<output_t>(hls::exp(static_cast<float>(10*tempIn[i+1])));
 		}
 		distanceExp << tempOut;
 	}
