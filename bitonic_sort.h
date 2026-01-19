@@ -8,13 +8,13 @@ using namespace std;
 
 /**
  * @brief Sorts an array of length N of (key,value) tuples.
- * @param keysInStream Stream interface of length N containing the keys of the first array
- * @param valuesInStream Stream interface of length N containing the values of the first array
- * @param keysOutStream Stream interface of length N containing the sorted key array
- * @param valuesOutStream Stream interface of length N containing the sorted value array
- * @tparam D key type
- * @tparam P value type
- * @tparam N Length of incoming array
+ * @param keysInStream Stream interface containing the keys array
+ * @param valuesInStream Stream interface containing the values array
+ * @param keysOutStream Stream interface containing the sorted keys array
+ * @param valuesOutStream Stream interface containing the sorted values array
+ * @tparam D Key type
+ * @tparam P Value type
+ * @tparam N Length of arrays
  * @tparam II Number of iterations
  * @details Latency depends on the pipeline depth. Throughput II is always one.
  */
@@ -49,13 +49,13 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
 
 /**
  * @brief Sorts an array of length N of (key,value) tuples.
- * @param keysInStream Stream interface of length N containing the keys of the first array
- * @param valuesInStream Stream interface of length N containing the values of the first array
- * @param keysOutStream Stream interface of length N containing the sorted key array
- * @param valuesOutStream Stream interface of length N containing the sorted value array
- * @tparam D key type
- * @tparam P value type
- * @tparam N Length of incoming array
+ * @param keysInStream Stream interface containing the keys array
+ * @param valuesInStream Stream interface containing the values array
+ * @param keysOutStream Stream interface containing the sorted keys array
+ * @param valuesOutStream Stream interface containing the sorted values array
+ * @tparam D Key type
+ * @tparam P Value type
+ * @tparam N Length of arrays
  * @details Latency depends on the pipeline depth. Throughput II is always one.
  */
 template <class D, class P, int N>
@@ -88,13 +88,13 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
 
 
 /**
- * @brief Sorts an array of length N of (key,value) tuples.
- * @param keysInStream Stream interface of length N containing the keys of the first array
- * @param valuesInStream Stream interface of length N containing the values of the first array
- * @param valuesOutStream Stream interface of length N containing the sorted value array
- * @tparam D key type
- * @tparam P value type
- * @tparam N Length of incoming array
+ * @brief Sorts an array of length N of (key,value) tuples and returns values only.
+ * @param keysInStream Stream interface containing the keys array
+ * @param valuesInStream Stream interface containing the values array
+ * @param valuesOutStream Stream interface containing the sorted values array
+ * @tparam D Key type
+ * @tparam P Value type
+ * @tparam N Length of arrays
  * @tparam II Number of iterations
  * @details Latency depends on the pipeline depth. Throughput II is always one.
  */
@@ -126,14 +126,13 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
 };
 
 /**
- * @brief Sorts an array of length N of (key,value) tuples.
- * @param keysInStream Stream interface of length N containing the keys of the first array
- * @param valuesInStream Stream interface of length N containing the values of the first array
- * @param valuesOutStream Stream interface of length N containing the sorted value array
- * @tparam D key type
- * @tparam P value type
- * @tparam N Length of incoming array
- * @tparam II Number of iterations
+ * @brief Sorts an array of length N of (key,value) tuples and returns values only.
+ * @param keysInStream Stream interface containing the keys array
+ * @param valuesInStream Stream interface containing the values array
+ * @param valuesOutStream Stream interface containing the sorted values array
+ * @tparam D Key type
+ * @tparam P Value type
+ * @tparam N Length of arrays
  * @details Latency depends on the pipeline depth. Throughput II is always one.
  */
 template <class D, class P, int N>
@@ -160,6 +159,5 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
                         
     valuesOutStream << values;
 };
-
 
 #endif

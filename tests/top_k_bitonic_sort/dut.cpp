@@ -1,7 +1,7 @@
 #include "dut.h"
 
-void dut(hls::stream<array<D, K>> keysInStream[N / K],
-         hls::stream<array<P, K>> valuesInStream[N / K],
+void dut(hls::stream<array<D, N>> &keysInStream,
+         hls::stream<array<P, N>> &valuesInStream,
          hls::stream<array<D, K>> &keysOutStream,
          hls::stream<array<P, K>> &valuesOutStream) {
    #pragma HLS dataflow

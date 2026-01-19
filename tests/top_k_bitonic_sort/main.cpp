@@ -4,22 +4,18 @@
 
 int main() {
 
-    hls::stream<std::array<D,K>> distancesIn[N/K];
-    hls::stream<std::array<P,K>> payloadIn[N/K];
+    hls::stream<std::array<D,N>> distancesIn;
+    hls::stream<std::array<P,N>> payloadIn;
 
-    std::array<D,K> distanceStimuli[N/K];
-    distanceStimuli[0] = {0.5, 0, -0.25, -0.9875};
-    distanceStimuli[1] = {0.75, 0.625, 0.0625, -0.75};
-    distancesIn[0] << distanceStimuli[0];
-    distancesIn[1] << distanceStimuli[1];
+    std::array<D,N> distanceStimuli;
+    distanceStimuli = {0.5, 0, -0.25, -0.9875, 0.75, 0.625, 0.0625, -0.75};
+    distancesIn << distanceStimuli;
 
     std::array<D,K> distanceReference = {0.75, 0.625, 0.5, 0.0625};
 
-    std::array<P,K> payloadStimuli[2];
-    payloadStimuli[0] = {0.75, 0.975, 0.25, 0.375};
-    payloadStimuli[1] = {0.5, -0.5, 0.875, 0};
-    payloadIn[0] << payloadStimuli[0];
-    payloadIn[1] << payloadStimuli[1];
+    std::array<P,N> payloadStimuli;
+    payloadStimuli = {0.75, 0.975, 0.25, 0.375, 0.5, -0.5, 0.875, 0};
+    payloadIn << payloadStimuli;
 
     std::array<P,K> payloadReference = {0.5, -0.5, 0.75, 0.875};
 

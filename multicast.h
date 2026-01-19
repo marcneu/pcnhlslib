@@ -1,3 +1,6 @@
+#ifndef MULTICAST_H__
+#define MULTICAST_H__
+
 #include "hls_stream.h"
 
 template<typename T,int PAR>
@@ -76,3 +79,5 @@ void multicast(hls::stream<T> in[IN_PAR], hls::stream<T,DOUT> out[OUT_PAR][IN_PA
         }
     }
 }
+
+#endif

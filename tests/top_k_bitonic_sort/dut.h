@@ -4,16 +4,14 @@
 #include "top_k_bitonic_sort.h"
 #include "hls_stream.h"
 
-
-
 const int N = 8;
 const int K = 4;
 
 typedef ap_fixed<7,1>  D;
 typedef ap_fixed<7,1>  P;
 
-void dut(hls::stream<array<D, K>> keysInStream[N / K],
-        hls::stream<array<P, K>> valuesInStream[N / K],
+void dut(hls::stream<array<D, N>> &keysInStream,
+        hls::stream<array<P, N>> &valuesInStream,
         hls::stream<array<D, K>> &keysOutStream,
         hls::stream<array<P, K>> &valuesOutStream);
 

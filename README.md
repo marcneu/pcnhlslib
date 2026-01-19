@@ -1,22 +1,29 @@
 # Real-Time Graph-based Point Cloud Networks on FPGAs via Stall-Free Deep Pipelining
 
-This library contains architecture templates for deploying point cloud networks on FPGAs via ADM Vitis HLS.
-Templates in this version are tested against AMD Vitis 2024.2
+This library contains architecture templates for deploying point cloud networks on FPGAs via AMD Vitis HLS. 
+We provide High-Level Synthesis (HLS) architecture templates for common graph-based Point Cloud Network operators. Specifically we contribute templates for:
 
-## Structure 
+ - GraVNet operators
+ - Condensation Point Selection operators.
 
-We provide HLS architecture templates for common graph-based Point Cloud Network operators. You can find all avaailable operators in the folder `layers`. We also provide some example models that utilize these layers under `models`.
+Templates in this version are tested against AMD Vitis 2024.2. We have validated our examples on the VCK190, as well as AMD Ultrascale XCVU190.
 
 ## Examples
 
+We provide two examples for our repository: GNN-ETM, and our SBCCI use case. You can find additional information in the respectives READMEs.
+In general, you can expect all examples to work out of the box. However, if you would like to repdroduce the exact results, we recommend you to use the tagged commits (see below).
+
+### GNN-ETM 
+
+Please use the tagged commit [gnnetm](https://github.com/marcneu/pcnhlslib/tree/gnnetm), to reproduce our results exactly.
+
 ### SBCCI 2025 
 
-To make use of our library, we currently provide an example application for point cloud inference on FPGA. You may find a detailed a more detailed explanation in the respective 
-In our paper, we provide an example application for point cloud inference, demonstrating how to leverage our library.
+Please use the tagged commit [sbcci25](https://github.com/marcneu/pcnhlslib/tree/sbcci25) to reproduce the exact results.
 
-## Unit Tests
+## Tests
 
-Unit tests for developed kernels are available under `unit_tests`.
+Tests for developed kernels are available under `tests`.
 You may build all unit test through `make all`.
 
 ## Citation
