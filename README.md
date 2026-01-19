@@ -24,5 +24,14 @@ You may build all unit test through `make all`.
 If you find this repository useful, please cite our work:
 
 ```
-TBD
+@inproceedings{11218652,
+  author={Neu, Marc and Haide, Isabel and Justinger, Timo and Rädler, Till and Dajaku, Valdrin and Ferber, Torben and Becker, Jürgen},
+  booktitle={2025 38th SBC/SBMicro/IEEE Symposium on Integrated Circuits and Systems Design (SBCCI)}, 
+  title={Real-Time Graph-based Point Cloud Networks on FPGAs via Stall-Free Deep Pipelining}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-5},
+  keywords={Point cloud compression;Geometry;High energy physics;Graphics processing units;Detectors;Throughput;Real-time systems;Field programmable gate arrays;System analysis and design;Pipeline processing;Point Cloud Network;Graphs;FPGA;Real-Time;High-Performance-Computing;Dataflow;Latency},
+  doi={10.1109/SBCCI66862.2025.11218652}}
 ```
