@@ -23,7 +23,7 @@ void build_point_rows(hls::stream<array<T,F_C>> inCoordinateStream[PAR],
 					  array<T,F_C> query[N],
 					  array<T,F_C> points[N]) {
 	for(int ii=0; ii < II; ii++) {
-		#pragma HLS pipeline II=1 rewind
+		#pragma HLS pipeline II=1 style=flp rewind
 		for(int p = 0; p < PAR; p++) {
 			array<T,F_C> inCoordinates;
 			inCoordinateStream[p] >> inCoordinates;
@@ -42,7 +42,7 @@ template<typename input_t,
 		 int II>
 void calculate_isolation(array<input_t,F_C> query[N],
 						 array<input_t,F_C> points[N],
-						 hls::stream<array<ap_uint<N>,N>> &isolationStream,
+						 ap_uint<N> isolations[N],
 						 distance_t isolationThreshold) {
 	
 	#pragma HLS stable variable=isolationThreshold
@@ -53,10 +53,9 @@ void calculate_isolation(array<input_t,F_C> query[N],
 	distance_t accumulate[PAR][N][F_C];
 	#pragma HLS ARRAY_PARTITION variable=accumulate dim=0 complete
 
-	array<ap_uint<N>,N> distances;
-
 	for(int ii = 0; ii < II; ii++) {
-		#pragma HLS pipeline II=1 rewind
+		#pragma HLS pipeline II=1 style=flp rewind
+		ap_uint<N> distances;
 		for(int p = 0; p < PAR; p++) {
 			int q = PAR*ii + p;		
 
@@ -69,12 +68,8 @@ void calculate_isolation(array<input_t,F_C> query[N],
 			}
 
 			for(int n = 0; n < N; n++) {
-					distances[PAR*ii+p].set(n,((distance_t) accumulate[p][n][F_C-1] >= isolationThreshold));
+					isolations[PAR*ii+p].set(n,((distance_t) accumulate[p][n][F_C-1] >= isolationThreshold));
 			}
-		}
-
-		if(ii == II - 1) {
-			isolationStream << distances;
 		}
 	}
 }
@@ -85,7 +80,7 @@ template<typename distance_t,
          int N,
          int PAR,
          int II>
-void condensation_point_isolation_criteria(hls::stream<array<ap_uint<N>,N>>	    &isolationStream,
+void condensation_point_isolation_criteria(ap_uint<N>	                        isolations[N],
 	                                       hls::stream<ap_uint<N>>				&inFlagStream,
 				   						   hls::stream<array<id_t, N>> 			&sortedIdentifierStream,
                    						   hls::stream<ap_uint<N>>              &outCluster) {
@@ -98,13 +93,10 @@ void condensation_point_isolation_criteria(hls::stream<array<ap_uint<N>,N>>	    
 	int nonzeros;
 	int select;
 
-	array<ap_uint<N>,N> isolations;
-
     for (int i = 0; i < II; i++) {
-        #pragma HLS pipeline II=1
+        #pragma HLS pipeline II=1 style=flp
         if(i == 0) {
             out.range(N-1,0) = 0;
-            isolationStream >> isolations;
             array<id_t, N> buf;
             sortedIdentifierStream >> buf;
 			inFlagStream >> flags;
@@ -140,7 +132,7 @@ void condensation_point_beta_candidates(hls::stream<array<beta_t,BETA_WIDTH>> in
 	ap_uint<N> flag = 0;
 
 	for (int ii = 0; ii < II; ii++) {
-		#pragma HLS PIPELINE II=1 rewind
+		#pragma HLS PIPELINE II=1 style=flp rewind
 		for (int p = 0; p < PAR; p++) {
 			#pragma HLS UNROLL
             if(ii*PAR+p < N) {
@@ -189,10 +181,11 @@ void condensation_point_selection(hls::stream<array<input_t,TPOS_WIDTH>> 	coordi
 	hls::stream<array<identifier_t, N>> sortedIdentifierStream;
 	bitonic_sort<beta_t,identifier_t,N>(betaConcat,unsortedIdentifierStream,sortedIdentifierStream);
 
-	hls::stream<array<ap_uint<N>,N>> isolationStream;
-	calculate_isolation<input_t,distance_t,TPOS_WIDTH,N,PAR,II>(query,points,isolationStream,isolationThreshold);
+	ap_uint<N> isolations[N];
+	#pragma HLS ARRAY_PARTITION variable=isolations dim=0 complete
+	calculate_isolation<input_t,distance_t,TPOS_WIDTH,N,PAR,II>(query,points,isolations,isolationThreshold);
 
-    condensation_point_isolation_criteria<distance_t,identifier_t,N,PAR,II>(isolationStream,flagStream,sortedIdentifierStream,condensationPoints);
+    condensation_point_isolation_criteria<distance_t,identifier_t,N,PAR,II>(isolations,flagStream,sortedIdentifierStream,condensationPoints);
 
 }
 
