@@ -25,7 +25,7 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
                   hls::stream<array<P, N>> &valuesOutStream)
 {
     for(int ii = 0; ii < II; ii++) {
-        #pragma HLS pipeline II=1 rewind
+        #pragma HLS pipeline II=1 style=flp
 
         array<D, N> keys;
         array<P, N> values;
@@ -104,7 +104,7 @@ void bitonic_sort(hls::stream<array<D, N>> &keysInStream,
                   hls::stream<array<P, N>> &valuesOutStream)
 {
     for(int ii = 0; ii < II; ii++) {
-        #pragma HLS pipeline II=1 rewind
+        #pragma HLS pipeline II=1 style=flp
 
         array<D, N> keys;
         array<P, N> values;

@@ -31,7 +31,7 @@ void top_k_bitonic_merge(hls::stream<array<D, N / 2>> &keysAInStream, hls::strea
                          hls::stream<array<D, K>> &keysOutStream, hls::stream<array<P, K>> &valuesOutStream)
 {
     for(int ii = 0; ii < II; ii++) {
-        #pragma HLS pipeline II = 1 rewind
+        #pragma HLS pipeline II = 1 style=flp
         array<D, N / 2> keysA, keysB;
         keysAInStream >> keysA;
         keysBInStream >> keysB;
