@@ -192,15 +192,16 @@ void calculate_distances(hls::stream<array<input_t,F_C>> queryStream[N],
 
 	for(int ii = 0; ii < II; ii++) {
 		#pragma HLS pipeline II=1  style=flp
+
+		if(ii == 0) {
+			for(int n = 0; n < N; n++) {
+				queryStream[n] >> query[n];
+				pointStream[n] >> points[n];
+			}
+		}
+
 		for(int p = 0; p < PAR; p++) {
 			int q = PAR*ii + p;
-
-			if(ii == 0) {
-				for(int n = 0; n < N; n++) {
-					queryStream[n] >> query[n];
-					pointStream[n] >> points[n];
-				}
-			}
 	
 			for(int n = 0; n < N; n++) {
 				for(int f = 0; f < F_C; f++) {
@@ -225,6 +226,7 @@ void calculate_distances(hls::stream<array<input_t,F_C>> queryStream[N],
 			}
 		}
 	}
+
 }
 
 template<typename T,
@@ -649,7 +651,7 @@ void gravnetconv(hls::stream<array<coordinate_t,F_C>> coordinateStream[PAR],
 
     //FIXME: Yields error when using for loop.
   	top_k_bitonic_sort_tree<distance_t,ap_uint<ceillog2(N)>,N,K,II>(maskedDistances[0], unsortedPayload[0],sortedDistances[0],sortedPayload[0]);
-  	//top_k_bitonic_sort_tree<distance_t,ap_uint<ceillog2(N)>,N,K,II>(maskedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
+  	top_k_bitonic_sort_tree<distance_t,ap_uint<ceillog2(N)>,N,K,II>(maskedDistances[1], unsortedPayload[1],sortedDistances[1],sortedPayload[1]);
 
 	//TODO: Depends on the time for calculating exponential functions
 	hls::stream<array<array<feature_t,F_P>,K>,48> sortedFeatures[PAR];
